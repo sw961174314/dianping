@@ -1,9 +1,11 @@
 package com.java.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.java.dto.LoginFormDTO;
 import com.java.dto.Result;
+import com.java.dto.UserDTO;
 import com.java.entity.User;
 import com.java.mapper.UserMapper;
 import com.java.service.IUserService;
@@ -75,7 +77,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
             createUserWithPhone(phone);
         }
         // 7.保存用户信息到session中
-        session.setAttribute("user", user);
+        session.setAttribute("user", BeanUtil.copyProperties(user, UserDTO.class));
         return Result.ok();
     }
 

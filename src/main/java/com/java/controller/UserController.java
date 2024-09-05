@@ -3,6 +3,7 @@ package com.java.controller;
 
 import com.java.dto.LoginFormDTO;
 import com.java.dto.Result;
+import com.java.dto.UserDTO;
 import com.java.entity.User;
 import com.java.entity.UserInfo;
 import com.java.service.IUserInfoService;
@@ -64,7 +65,7 @@ public class UserController {
     @GetMapping("/me")
     public Result me(){
         // 获取当前登录的用户并返回
-        User user = UserHolder.getUser();
+        UserDTO user = UserHolder.getUser();
         return Result.ok(user);
     }
 
