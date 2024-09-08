@@ -8,9 +8,11 @@ import com.java.service.ISeckillVoucherService;
 import com.java.service.IVoucherOrderService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.java.utils.RedisIdWorker;
+import com.java.utils.SimpleRedisLock;
 import com.java.utils.UserHolder;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +29,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     @Autowired
     private RedisIdWorker redisIdWorker;
+
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
 
     /**
      * 优惠券秒杀
@@ -54,12 +59,21 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
 
         Long userId = UserHolder.getUser().getId();
-        // 如果只在createVoucherOrder方法内部加锁 方法执行完就会释放锁 但是事务可能还没有提交 就会有新的进程取锁 导致超卖
-        // 因此 需要对整一个方法进行加锁 这样提交事务之后才会释放锁
-        synchronized (userId.toString().intern()){
-            // 使用代理对象调用 防止事务失效
+        // 创建锁对象
+        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+        // 获取锁
+        boolean isLock = lock.tryLock(1200);
+        // 判断是否成功获取锁
+        if (!isLock) {
+            // 获取锁失败 返回错误或失败
+            return Result.fail("不允许重复下单");
+        }
+        try {
             IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
             return proxy.createVoucherOrder(voucherId);
+        }finally {
+            // 释放锁
+            lock.unlock();
         }
     }
 
