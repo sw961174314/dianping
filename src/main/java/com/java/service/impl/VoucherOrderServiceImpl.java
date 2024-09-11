@@ -130,6 +130,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
                     } catch (InterruptedException ex) {
                         throw new RuntimeException(ex);
                     }
+                }finally {
+                    // todo 防止死循环造成系统卡顿
+                    return;
                 }
             }
         }
