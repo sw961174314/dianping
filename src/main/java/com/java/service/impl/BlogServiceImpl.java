@@ -7,10 +7,12 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.java.dto.Result;
 import com.java.dto.UserDTO;
 import com.java.entity.Blog;
+import com.java.entity.Follow;
 import com.java.entity.User;
 import com.java.mapper.BlogMapper;
 import com.java.service.IBlogService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.java.service.IFollowService;
 import com.java.service.IUserService;
 import com.java.utils.SystemConstants;
 import com.java.utils.UserHolder;
@@ -23,6 +25,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.java.utils.RedisConstants.BLOG_LIKED_KEY;
+import static com.java.utils.RedisConstants.FEED_KEY;
 
 /**
  * 服务实现类
@@ -35,6 +38,9 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
 
     @Autowired
     private IUserService userService;
+
+    @Autowired
+    private IFollowService followService;
 
     @Autowired
     private StringRedisTemplate stringRedisTemplate;
@@ -129,6 +135,35 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
                 .stream().map(user -> BeanUtil.copyProperties(user, UserDTO.class)).collect(Collectors.toList());
         // 4.返回
         return Result.ok(userDTOS);
+    }
+
+    /**
+     * 保存笔记
+     * @param blog
+     * @return
+     */
+    @Override
+    public Result saveBlog(Blog blog) {
+        // 1.获取登录用户
+        UserDTO user = UserHolder.getUser();
+        blog.setUserId(user.getId());
+        // 2.保存探店笔记
+        boolean isSuccess = save(blog);
+        if (!isSuccess) {
+            return Result.fail("新增笔记失败");
+        }
+        // 3.查询笔记作者的所有粉丝
+        List<Follow> follows = followService.query().eq("follow_user_id", user.getId()).list();
+        // 4.推送笔记id
+        for (Follow follow : follows) {
+            // 4.1.获取粉丝id
+            Long userId = follow.getUserId();
+            // 4.2.推送
+            String key = FEED_KEY + userId;
+            stringRedisTemplate.opsForZSet().add(key, blog.getId().toString(), System.currentTimeMillis());
+        }
+        // 5.返回id
+        return Result.ok(blog.getId());
     }
 
     /**
