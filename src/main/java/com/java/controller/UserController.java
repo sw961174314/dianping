@@ -1,6 +1,7 @@
 package com.java.controller;
 
 
+import cn.hutool.core.bean.BeanUtil;
 import com.java.dto.LoginFormDTO;
 import com.java.dto.Result;
 import com.java.dto.UserDTO;
@@ -81,5 +82,22 @@ public class UserController {
         info.setUpdateTime(null);
         // 返回
         return Result.ok(info);
+    }
+
+    /**
+     * 查询用户数据
+     * @param userId
+     * @return
+     */
+    @GetMapping("/{id}")
+    public Result queryUserById(@PathVariable("id") Long userId){
+        // 查询详情
+        User user = userService.getById(userId);
+        if (user == null) {
+            return Result.ok();
+        }
+        UserDTO userDTO = BeanUtil.copyProperties(user, UserDTO.class);
+        // 返回
+        return Result.ok(userDTO);
     }
 }
