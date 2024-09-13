@@ -92,4 +92,13 @@ public class ShopController {
         // 返回数据
         return Result.ok(page.getRecords());
     }
+
+    /**
+     * 将商户经纬度导入Redis
+     * @return
+     */
+    @GetMapping("/load/shop")
+    public Result loadShopData() {
+        return shopService.loadShopData();
+    }
 }
