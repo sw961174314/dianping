@@ -109,4 +109,13 @@ public class UserController {
     public Result sign() {
         return userService.sign();
     }
+
+    /**
+     * 查询连续签到天数
+     * @return
+     */
+    @GetMapping("/sign/count")
+    public Result signCount() {
+        return userService.signCount();
+    }
 }
